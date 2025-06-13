@@ -51,9 +51,16 @@ flutter {
 }
 
 dependencies {
+    // MediaPipe Tasks (pose detection)
     implementation("com.google.mediapipe:tasks-vision:0.10.8")
+
+    // CameraX
     implementation("androidx.camera:camera-core:1.1.0")
     implementation("androidx.camera:camera-camera2:1.1.0")
     implementation("androidx.camera:camera-lifecycle:1.1.0")
     implementation("androidx.camera:camera-view:1.1.0")
+
+    // Para Flutter MethodChannel
+    implementation("io.flutter:flutter_embedding_debug:1.0.0")
 }
+

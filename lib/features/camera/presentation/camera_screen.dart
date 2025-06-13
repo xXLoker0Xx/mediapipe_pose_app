@@ -1,7 +1,40 @@
 import 'package:flutter/material.dart';
-import 'package:camera/camera.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
+
+class NativeCameraPreview extends StatelessWidget {
+  const NativeCameraPreview({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 3 / 4, // Ajusta el aspecto según tu cámara
+      child: PlatformViewLink(
+        viewType: 'camera_preview_view',
+        surfaceFactory: (context, controller) {
+          return AndroidViewSurface(
+            controller: controller as AndroidViewController,
+            gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+            hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+          );
+        },
+        onCreatePlatformView: (params) {
+          return PlatformViewsService.initSurfaceAndroidView(
+            id: params.id,
+            viewType: 'camera_preview_view',
+            layoutDirection: TextDirection.ltr,
+            creationParams: null,
+            creationParamsCodec: const StandardMessageCodec(),
+          )
+            ..addOnPlatformViewCreatedListener(params.onPlatformViewCreated)
+            ..create();
+        },
+      ),
+    );
+  }
+}
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -11,41 +44,13 @@ class CameraScreen extends StatefulWidget {
 }
 
 class _CameraScreenState extends State<CameraScreen> {
-  late CameraController _controller;
-  bool _isCameraInitialized = false;
-  List<CameraDescription> _cameras = [];
-
   static const platform = MethodChannel('pose_detector');
   String _poseResult = "Esperando datos...";
 
   @override
   void initState() {
     super.initState();
-    _initializeCamera();
     _setUpChannelListener();
-  }
-
-  Future<void> _initializeCamera() async {
-    await Permission.camera.request();
-    _cameras = await availableCameras();
-
-    // Buscar la cámara frontal
-    final frontCamera = _cameras.firstWhere(
-      (camera) => camera.lensDirection == CameraLensDirection.front,
-      orElse: () => _cameras.first,
-    );
-
-    _controller = CameraController(
-      frontCamera,
-      ResolutionPreset.medium,
-      enableAudio: false,
-    );
-    await _controller.initialize();
-
-    if (!mounted) return;
-    setState(() {
-      _isCameraInitialized = true;
-    });
   }
 
   void _setUpChannelListener() {
@@ -60,15 +65,11 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Future<void> _startPoseDetection() async {
     try {
-      // Llamamos al método nativo
       final result = await platform.invokeMethod('startPoseDetection');
-      
-      // Si la invocación es exitosa, el resultado será el mensaje de éxito
       setState(() {
-        _poseResult = result;  // Actualiza el resultado con el mensaje de éxito
+        _poseResult = result;
       });
     } catch (e) {
-      // Si ocurre un error, lo capturamos y mostramos el mensaje de error
       setState(() {
         _poseResult = "Error al iniciar detección: $e";
       });
@@ -76,43 +77,39 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Vista en Vivo')),
-      body: _isCameraInitialized
-          ? Stack(
-              children: [
-                CameraPreview(_controller),
-                Positioned(
-                  top: 20,
-                  left: 20,
-                  child: ElevatedButton(
-                    onPressed: _startPoseDetection,
-                    child: const Text("Iniciar Detección"),
-                  ),
+      appBar: AppBar(title: const Text('Cámara Nativa con Pose')),
+      body: Column(
+        children: [
+          // Caja 1: Cámara
+          const NativeCameraPreview(),
+
+          // Caja 2: Botón
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: ElevatedButton(
+              onPressed: _startPoseDetection,
+              child: const Text("Iniciar Detección"),
+            ),
+          ),
+
+          // Caja 3: Resultado
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              color: Colors.black87,
+              child: SingleChildScrollView(
+                child: Text(
+                  _poseResult,
+                  style: const TextStyle(color: Colors.white),
                 ),
-                Positioned(
-                  bottom: 20,
-                  left: 20,
-                  right: 20,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    color: Colors.black.withOpacity(0.5),
-                    child: Text(
-                      _poseResult,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ),
-              ],
-            )
-          : const Center(child: CircularProgressIndicator()),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
