@@ -8,6 +8,11 @@
         android:label="mediapipe_pose_app"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+        <meta-data
+            android:name="io.flutter.embedding.android.RenderMode"
+            android:value="hybrid" />
+            
         <activity
             android:name=".MainActivity"
             android:exported="true"
