@@ -170,16 +170,24 @@ class _CameraScreenState extends State<CameraScreen> {
                         },
                       ),
                     ),
-                    IgnorePointer(
-                      child: CustomPaint(
-                        painter: PosePainter(
-                          landmarks: _landmarks,
-                          previewSize: _previewSize,
-                          widgetSize: Size(screenWidth, previewHeight),
+                    if (_landmarks.isNotEmpty &&
+                        _previewSize != null &&
+                        _inputWidth != null &&
+                        _inputHeight != null) ...[
+                      IgnorePointer(
+                        child: CustomPaint(
+                          painter: PosePainter(
+                            landmarks: _landmarks,
+                            previewSize: _previewSize,
+                            widgetSize: Size(screenWidth, previewHeight),
+                            imputSize: Size(_inputWidth!.toDouble(), _inputHeight!.toDouble()),
+                          ),
+                          size: Size(screenWidth, previewHeight),
                         ),
-                        size: Size(screenWidth, previewHeight),
                       ),
-                    ),
+                    ] else ...[
+                      const SizedBox(), // o un contenedor vacío mientras llegan los datos
+                    ]
                   ],
                 ),
               ),
