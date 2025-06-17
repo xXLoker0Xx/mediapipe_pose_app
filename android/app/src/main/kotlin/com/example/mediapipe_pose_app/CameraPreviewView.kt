@@ -20,7 +20,7 @@ class CameraPreviewView(private val context: Context) : PlatformView {
 
         // Configura el tipo de escala de la vista previa.
         // FILL_CENTER es una opción que ajusta la vista previa para llenar el espacio disponible,
-        // scaleType = PreviewView.ScaleType.FILL_CENTER
+        scaleType = PreviewView.ScaleType.FILL_START
 
         // Forzar el uso de TextureView en lugar de SurfaceView
         // Esto es necesario para que se integre correctamente dentro de la jerarquía de widgets de Flutter

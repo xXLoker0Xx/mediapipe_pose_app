@@ -1,3 +1,4 @@
+// 📁 lib/screens/shared/camera_screen.dart
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -63,11 +64,7 @@ class _CameraScreenState extends State<CameraScreen> {
         _inputWidth = data['inputWidth'];
         _inputHeight = data['inputHeight'];
 
-
         if (_previewSize != null && _inputWidth != null && _inputHeight != null) {
-          // final widthRatio = _previewSize!.width / _inputWidth!;
-          // final heightRatio = _previewSize!.height / _inputHeight!;
-
           final puntos = rawPoints.map<Offset>((e) {
             final x = (e['x'] as double);
             final y = (e['y'] as double);
@@ -92,7 +89,6 @@ class _CameraScreenState extends State<CameraScreen> {
     });
   }
 
-
   /// Método para iniciar la detección de poses
   /// Invoca el método nativo "startPoseDetection" para iniciar la detección de poses
   Future<void> _startPoseDetection() async {
@@ -116,24 +112,22 @@ class _CameraScreenState extends State<CameraScreen> {
     final previewHeight = screenHeight * 0.6;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: const Text("🧘 Detección de Poses"),
         centerTitle: true,
-        backgroundColor: Colors.deepPurple,
       ),
       body: Column(
         children: [
           // 📸 Vista cámara + puntos (60%)
-          // Utiliza Container para crear un borde alrededor de la vista de la cámara
           Container(
-            key: _cameraContainerKey, // Clave para obtener tamaño
+            key: _cameraContainerKey,
             width: screenWidth,
             height: previewHeight,
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               border: Border.all(
-                color: Colors.deepPurpleAccent,
+                color: Theme.of(context).colorScheme.primary,
                 width: 3,
               ),
               borderRadius: BorderRadius.circular(12),
@@ -170,16 +164,24 @@ class _CameraScreenState extends State<CameraScreen> {
                         },
                       ),
                     ),
-                    IgnorePointer(
-                      child: CustomPaint(
-                        painter: PosePainter(
-                          landmarks: _landmarks,
-                          previewSize: _previewSize,
-                          widgetSize: Size(screenWidth, previewHeight),
+                    if (_landmarks.isNotEmpty &&
+                        _previewSize != null &&
+                        _inputWidth != null &&
+                        _inputHeight != null) ...[
+                      IgnorePointer(
+                        child: CustomPaint(
+                          painter: PosePainter(
+                            landmarks: _landmarks,
+                            previewSize: _previewSize,
+                            widgetSize: Size(screenWidth, previewHeight),
+                            imputSize: Size(_inputWidth!.toDouble(), _inputHeight!.toDouble()),
+                          ),
+                          size: Size(screenWidth, previewHeight),
                         ),
-                        size: Size(screenWidth, previewHeight),
                       ),
-                    ),
+                    ] else ...[
+                      const SizedBox(),
+                    ]
                   ],
                 ),
               ),
@@ -194,15 +196,6 @@ class _CameraScreenState extends State<CameraScreen> {
                 onPressed: _startPoseDetection,
                 icon: const Icon(Icons.play_arrow),
                 label: const Text("Iniciar Detección"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  textStyle: const TextStyle(fontSize: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
               ),
             ),
           ),
@@ -214,13 +207,13 @@ class _CameraScreenState extends State<CameraScreen> {
               margin: const EdgeInsets.symmetric(horizontal: 16),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.black87,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: SingleChildScrollView(
                 child: Text(
                   _poseResult,
-                  style: const TextStyle(color: Colors.white),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
             ),
@@ -229,4 +222,4 @@ class _CameraScreenState extends State<CameraScreen> {
       ),
     );
   }
-}
+} 
