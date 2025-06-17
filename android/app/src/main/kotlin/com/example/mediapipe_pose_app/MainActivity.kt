@@ -51,6 +51,7 @@ class MainActivity : FlutterFragmentActivity() {
                     // Inicializa el analizador de poses con el contexto, el canal y la vista previa.
                     // El analizador de poses se encargará de procesar las imágenes de la cámara y detectar poses en tiempo real.
                     poseAnalyzer = PoseAnalyzer(this, channel, previewView)
+                    // Configura el analizador de poses.
                     poseAnalyzer.setup()
                     result.success("Pose detection started")
                 } else {

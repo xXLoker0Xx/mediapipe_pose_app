@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+  runApp(const EirixApp());
 }
 
 class PoseDetectorChannel {

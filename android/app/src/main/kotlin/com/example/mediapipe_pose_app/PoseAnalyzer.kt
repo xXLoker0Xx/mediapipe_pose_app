@@ -176,9 +176,9 @@ class PoseAnalyzer(
             // Verificamos si el PoseLandmarker está inicializado y si la imagen es válida
             val currentTime = System.currentTimeMillis()
             // Si el PoseLandmarker no está inicializado, cerramos el ImageProxy
-            if (currentTime - lastAnalysisTime < 100) {
-                // Si el tiempo desde el último análisis es menor a 100ms, cerramos el ImageProxy
-                imageProxy.close() // ⛔ Saltar análisis si fue hace <100ms
+            if (currentTime - lastAnalysisTime < 75) {
+                // Si el tiempo desde el último análisis es menor a 75ms, cerramos el ImageProxy
+                imageProxy.close() // ⛔ Saltar análisis si fue hace <75ms
                 return
             }
 
@@ -186,8 +186,7 @@ class PoseAnalyzer(
             val mediaImage = imageProxy.image
             // Si la imagen es nula, cerramos el ImageProxy y salimos
             if (mediaImage != null && ::poseLandmarker.isInitialized) {
-                // Convertimos la imagen a MPImage, que es el formato que MediaPipe usa
-                // para procesar imágenes
+                // Convertimos la imagen a MPImage, que es el formato que MediaPipe usa para procesar imágenes
                 // Obtenemos la rotación de la imagen para ajustarla correctamente
                 // MediaPipe espera que las imágenes estén en formato NV21, así que convertimos la imagen
                 val rotation = imageProxy.imageInfo.rotationDegrees
