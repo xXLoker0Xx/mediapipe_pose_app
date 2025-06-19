@@ -1,30 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/services.dart';
+
+Future<bool> _confirmLogout(BuildContext context) async {
+  final shouldLogout = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Cerrar sesión'),
+      content: const Text('¿Deseas cerrar sesión y salir de la app?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('No'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('Sí'),
+        ),
+      ],
+    ),
+  );
+
+  return shouldLogout ?? false;
+}
 
 class HomePacienteScreen extends StatelessWidget {
   const HomePacienteScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+
+
     final List<_HomeOption> opciones = [
       _HomeOption("📋 Historial", Icons.history, '/historial'),
       _HomeOption("📆 Rutinas", Icons.list_alt, '/rutinas'),
       _HomeOption("🧘 Ejercicio", Icons.fitness_center, '/camera'),
       _HomeOption("👤 Perfil", Icons.person, '/perfil'),
     ];
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) async{
+        if (didPop) return;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Inicio del Paciente"),
-        centerTitle: true,
-      ),
-      body: GridView.count(
-        crossAxisCount: 2,
-        padding: const EdgeInsets.all(20),
-        mainAxisSpacing: 20,
-        crossAxisSpacing: 20,
-        children: opciones.map((op) => _OptionCard(op)).toList(),
+        final salir = await _confirmLogout(context);
+        if (salir) {
+          await Supabase.instance.client.auth.signOut();
+          SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("Home"),
+          centerTitle: true,
+        ),
+        body: GridView.count(
+          crossAxisCount: 2,
+          padding: const EdgeInsets.all(20),
+          mainAxisSpacing: 20,
+          crossAxisSpacing: 20,
+          children: opciones.map((op) => _OptionCard(op)).toList(),
+        ),
       ),
     );
+
   }
 }
 

@@ -104,12 +104,26 @@ class _CameraScreenState extends State<CameraScreen> {
     }
   }
 
+  Future<void> _stopPoseDetection() async {
+    try {
+      await platform.invokeMethod('stopPoseDetection');
+      setState(() {
+        _poseResult = "Detección detenida.";
+        _landmarks.clear();
+      });
+    } catch (e) {
+      setState(() {
+        _poseResult = "Error al detener detección: $e";
+      });
+    }
+  }
+
   /// Construye la interfaz de usuario de la pantalla de cámara
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final previewHeight = screenHeight * 0.6;
+    final previewHeight = screenHeight * 0.7;
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -124,11 +138,11 @@ class _CameraScreenState extends State<CameraScreen> {
             key: _cameraContainerKey,
             width: screenWidth,
             height: previewHeight,
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             decoration: BoxDecoration(
               border: Border.all(
                 color: Theme.of(context).colorScheme.primary,
-                width: 3,
+                width: 1,
               ),
               borderRadius: BorderRadius.circular(12),
             ),
@@ -192,32 +206,48 @@ class _CameraScreenState extends State<CameraScreen> {
           SizedBox(
             height: screenHeight * 0.1,
             child: Center(
-              child: ElevatedButton.icon(
-                onPressed: _startPoseDetection,
-                icon: const Icon(Icons.play_arrow),
-                label: const Text("Iniciar Detección"),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: _startPoseDetection,
+                    icon: const Icon(Icons.play_arrow),
+                    label: const Text("Iniciar"),
+                  ),
+                  const SizedBox(width: 16), // Espacio entre botones
+                  ElevatedButton.icon(
+                    onPressed: _stopPoseDetection,
+                    icon: const Icon(Icons.stop),
+                    label: const Text("Detener"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.secondary,
+                      shadowColor: Theme.of(context).colorScheme.secondary,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
 
+
           // 📋 Resultados (30%)
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: SingleChildScrollView(
-                child: Text(
-                  _poseResult,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
-            ),
-          ),
+          // Expanded(
+          //   child: Container(
+          //     width: double.infinity,
+          //     margin: const EdgeInsets.symmetric(horizontal: 16),
+          //     padding: const EdgeInsets.all(12),
+          //     decoration: BoxDecoration(
+          //       color: Theme.of(context).colorScheme.surface,
+          //       borderRadius: BorderRadius.circular(12),
+          //     ),
+          //     child: SingleChildScrollView(
+          //       child: Text(
+          //         _poseResult,
+          //         style: Theme.of(context).textTheme.bodyMedium,
+          //       ),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );

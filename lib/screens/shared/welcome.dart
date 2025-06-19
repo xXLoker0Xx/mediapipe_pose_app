@@ -33,7 +33,7 @@ class WelcomeScreen extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 60),
+            const SizedBox(height: 10),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pushNamed('/login'),
               style: ElevatedButton.styleFrom(
