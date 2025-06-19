@@ -20,6 +20,11 @@ import io.flutter.plugin.common.MethodChannel
 import java.util.concurrent.Executors
 import androidx.camera.view.PreviewView
 
+import com.example.mediapipe_pose_app.AreaChecker
+import com.example.mediapipe_pose_app.CircularArea
+import com.example.mediapipe_pose_app.RectangularArea
+import com.example.mediapipe_pose_app.TargetArea
+
 
 class PoseAnalyzer(
     // Contexto de la aplicación, necesario para inicializar el modelo y la cámara
@@ -38,6 +43,14 @@ class PoseAnalyzer(
     // Variables para almacenar el tamaño de la imagen de entrada
     private var inputWidth = 0
     private var inputHeight = 0
+
+    ///////////////////////////////////////////////////////////
+    // Definimos un área circular para validar el movimiento //
+    ///////////////////////////////////////////////////////////
+    private val areaCheckers: List<AreaChecker> = listOf(
+        AreaChecker(CircularArea(0.5f, 0.5f, 0.2f)),
+        AreaChecker(RectangularArea(0.2f, 0.2f, 0.8f, 0.8f))
+    )
 
     fun setup() {
         try {
@@ -60,7 +73,6 @@ class PoseAnalyzer(
                     // Extraemos los puntos de referencia de la pose detectada
                     val landmarks = result.landmarks().firstOrNull()
                     // Convertimos los puntos de referencia a un formato que Flutter pueda entender
-
                     val landmarkData = landmarks?.map { mapOf("x" to it.x(), "y" to it.y()) }
 
                     val dataToSend = mapOf(
@@ -68,6 +80,31 @@ class PoseAnalyzer(
                         "inputWidth" to inputWidth,
                         "inputHeight" to inputHeight
                     )
+
+                    // 
+                    val wrist = landmarks?.getOrNull(16) // muñeca derecha
+
+                    if (wrist != null) {
+                        val x = wrist.x()
+                        val y = wrist.y()
+                        // Recorremos cada área y verificamos si está dentro
+                        val results = areaCheckers.map { checker ->
+                            mapOf(
+                                "area" to checker.export(),
+                                "inside" to checker.isInside(x, y)
+                            )
+                        }
+
+                        // Enviamos la posición del punto + resultados de todas las áreas
+                        val areaData = mapOf(
+                            "point" to mapOf("x" to x, "y" to y),
+                            "results" to results
+                        )
+
+                        Handler(Looper.getMainLooper()).post {
+                            channel.invokeMethod("onAreaCheck", areaData)
+                        }
+                    }
 
                     Handler(Looper.getMainLooper()).post {
                         Log.d("POSE_DEBUG", "➡️ Enviando ${landmarkData?.size ?: 0} puntos con tamaño $inputWidth x $inputHeight a Flutter")
@@ -172,43 +209,52 @@ class PoseAnalyzer(
     private fun processImageProxy(imageProxy: ImageProxy) {
         // Intentamos obtener la imagen del ImageProxy
         // Si la imagen es nula o el PoseLandmarker no está inicializado, cerramos el ImageProxy
+        val currentTime = System.currentTimeMillis()
+
+        // Si el tiempo desde el último análisis es menor a 75ms, cerramos el ImageProxy
+        if (currentTime - lastAnalysisTime < 75) {
+            imageProxy.close() // ⛔ Saltar análisis si fue hace <75ms
+            return
+        }
+
         try {
-            // Verificamos si el PoseLandmarker está inicializado y si la imagen es válida
-            val currentTime = System.currentTimeMillis()
-            // Si el PoseLandmarker no está inicializado, cerramos el ImageProxy
-            if (currentTime - lastAnalysisTime < 75) {
-                // Si el tiempo desde el último análisis es menor a 75ms, cerramos el ImageProxy
-                imageProxy.close() // ⛔ Saltar análisis si fue hace <75ms
+            // Verificamos que la imagen no sea nula y que el PoseLandmarker esté inicializado
+            val mediaImage = imageProxy.image
+            // Si la imagen es nula, salimos sin procesar
+            if (mediaImage == null || !::poseLandmarker.isInitialized) {
                 return
             }
 
-            // Verificamos que la imagen no sea nula y que el PoseLandmarker esté inicializado
-            val mediaImage = imageProxy.image
-            // Si la imagen es nula, cerramos el ImageProxy y salimos
-            if (mediaImage != null && ::poseLandmarker.isInitialized) {
-                // Convertimos la imagen a MPImage, que es el formato que MediaPipe usa para procesar imágenes
-                // Obtenemos la rotación de la imagen para ajustarla correctamente
-                // MediaPipe espera que las imágenes estén en formato NV21, así que convertimos la imagen
-                val rotation = imageProxy.imageInfo.rotationDegrees
-                // Convertimos la imagen a MPImage usando MediaPipeImageUtils
-                // Esta función convierte la imagen YUV a NV21 y luego a un bitmap que MediaPipe puede procesar
-                val mpImage: MPImage = MediaPipeImageUtils.imageToMPImage(mediaImage, rotation)
-                inputWidth = mpImage.width
-                inputHeight = mpImage.height
-                // Llamamos al PoseLandmarker para detectar la pose en la imagen
-                // Usamos detectAsync para procesar la imagen de forma asíncrona
-                // Pasamos la imagen y el timestamp actual para que MediaPipe pueda sincronizar los resultados
-                // poseLandmarker.detectAsync(mpImage, System.currentTimeMillis())
+            // Convertimos la imagen a MPImage, que es el formato que MediaPipe usa para procesar imágenes
+            // Obtenemos la rotación de la imagen para ajustarla correctamente
+            // MediaPipe espera que las imágenes estén en formato NV21, así que convertimos la imagen
+            val rotation = imageProxy.imageInfo.rotationDegrees
+            // Convertimos la imagen a MPImage usando MediaPipeImageUtils
+            // Esta función convierte la imagen YUV a NV21 y luego a un bitmap que MediaPipe puede procesar
+            val mpImage: MPImage = MediaPipeImageUtils.imageToMPImage(mediaImage, rotation)
+
+            inputWidth = mpImage.width
+            inputHeight = mpImage.height
+
+            // Llamamos al PoseLandmarker para detectar la pose en la imagen
+            // Usamos detectAsync para procesar la imagen de forma asíncrona
+            // Pasamos la imagen y el timestamp actual para que MediaPipe pueda sincronizar los resultados
+            try {
                 poseLandmarker.detectAsync(mpImage, currentTime)
                 // Actualizamos el tiempo del último análisis
                 lastAnalysisTime = currentTime
+            } catch (e: Exception) {
+                Log.e("PoseAnalyzer", "❌ detectAsync falló", e)
             }
+
         } catch (e: Exception) {
-            Log.e("PoseAnalyzer", "Error procesando imagen", e)
+            Log.e("PoseAnalyzer", "❌ Error procesando imagen", e)
         } finally {
+            // Cerramos el ImageProxy siempre, incluso si hubo errores
             imageProxy.close()
         }
     }
+
 
     fun close() {
         if (::poseLandmarker.isInitialized) {

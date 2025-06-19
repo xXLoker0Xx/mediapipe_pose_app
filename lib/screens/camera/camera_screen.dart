@@ -27,6 +27,9 @@ class _CameraScreenState extends State<CameraScreen> {
   /// Utiliza un MethodChannel para invocar métodos nativos
   static const platform = MethodChannel('pose_detector');
 
+  /// Datos de verificación del área
+  Map<String, dynamic>? _areaCheckData;
+
   /// Lista de puntos de la pose detectada
   /// Utiliza una lista de Offset para almacenar las coordenadas de los puntos
   List<Offset> _landmarks = [];
@@ -86,6 +89,14 @@ class _CameraScreenState extends State<CameraScreen> {
           _previewSize = Size(width, height);
         });
       }
+
+      if (call.method == "onAreaCheck") {
+        final Map<dynamic, dynamic> rawData = call.arguments;
+        final Map<String, dynamic> converted = Map<String, dynamic>.from(rawData);
+        setState(() {
+          _areaCheckData = converted;
+        });
+      }
     });
   }
 
@@ -123,7 +134,7 @@ class _CameraScreenState extends State<CameraScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final previewHeight = screenHeight * 0.7;
+    final previewHeight = screenHeight * 0.637;
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -188,7 +199,8 @@ class _CameraScreenState extends State<CameraScreen> {
                             landmarks: _landmarks,
                             previewSize: _previewSize,
                             widgetSize: Size(screenWidth, previewHeight),
-                            imputSize: Size(_inputWidth!.toDouble(), _inputHeight!.toDouble()),
+                            inputSize: Size(_inputWidth!.toDouble(), _inputHeight!.toDouble()),
+                            areaData: _areaCheckData,
                           ),
                           size: Size(screenWidth, previewHeight),
                         ),
