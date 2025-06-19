@@ -41,14 +41,6 @@ class WelcomeScreen extends StatelessWidget {
               ),
               child: const Text('Login'),
             ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pushNamed('/testconnection'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-              ),
-              child: const Text('TestConection'),
-            ),
           ],
         ),
       ),

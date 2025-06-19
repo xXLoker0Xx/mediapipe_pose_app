@@ -57,6 +57,17 @@ class MainActivity : FlutterFragmentActivity() {
                 } else {
                     result.error("preview_unavailable", "No se pudo obtener PreviewView", null)
                 }
+
+            // ✅ Nuevo método para cerrar manualmente
+            } else if (call.method == "stopPoseDetection") {
+                if (::poseAnalyzer.isInitialized) {
+                    poseAnalyzer.close()
+                    result.success("Pose detection stopped")
+                } else {
+                    result.error("not_initialized", "PoseAnalyzer no está inicializado", null)
+                }
+
+            // Sino el método no está implementado
             } else {
                 result.notImplemented()
             }
